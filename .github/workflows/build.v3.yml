@@ -1,4 +1,4 @@
-name: Build amdl & Push All Files to amdl-run
+name: Comment Scan Build amdl & Push All Files to amdl-run
 on:
   workflow_dispatch: # 仅手动触发，灵活控制执行时机
   # 可选：取消注释后，源码仓库main分支推送时自动触发
