@@ -1,0 +1,79 @@
+name: Build amdl & Push to amdl-run
+on:
+  workflow_dispatch: # 仅手动触发，灵活控制编译时机
+  # 可选：推送到当前项目main分支时自动触发
+  # push:
+  #   branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04 # 与之前一致的编译环境（Ubuntu24.04 + Go1.23）
+    steps:
+      # 步骤1：拉取 apple-music-downloader 源码（当前项目）
+      - name: Checkout apple-music-downloader source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # 浅克隆，提升速度
+
+      # 步骤2：安装 Go1.23.0（与之前环境完全一致，无版本差异）
+      - name: Install Go 1.23.0
+        run: |
+          wget -q https://dl.google.com/go/go1.23.0.linux-amd64.tar.gz
+          sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.23.0.linux-amd64.tar.gz
+          echo "PATH=/usr/local/go/bin:$PATH" >> $GITHUB_ENV
+          go version # 验证Go版本，确保环境正确
+
+      # 步骤3：配置Go国内镜像（解决依赖下载慢/失败，可选但推荐）
+      - name: Set Go Proxy (CN)
+        run: |
+          go env -w GOPROXY=https://goproxy.cn,direct
+
+      # 步骤4：核心编译：main.go → amdl（静态编译，无系统依赖）
+      - name: Build main.go to amdl (Static Compile)
+        run: |
+          # 补全项目依赖（防止缺失go.mod/go.sum导致编译失败）
+          go mod tidy
+          # 静态编译核心命令，指定输出名为amdl，精简体积
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o amdl -ldflags="-s -w" -trimpath ./main.go
+          # 双重赋予可执行权限，避免权限丢失
+          chmod +x amdl
+          # 验证编译结果：查看文件信息+可执行权限
+          ls -lahp amdl
+          # 可选：验证程序可运行（输出帮助信息）
+          ./amdl --help || echo "amdl 程序可正常执行"
+
+      # 步骤5：配置Git全局身份（Actions推送仓库必备，标准写法）
+      - name: Configure Git Global Identity
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      # 步骤6：核心：拉取你的 amdl-run 仓库（复用原有令牌 WRAPPER_PUSH_TOKEN）
+      - name: Checkout amdl-run Repository
+        uses: actions/checkout@v4
+        with:
+          repository: 你的GitHub用户名/amdl-run # 仅需替换：你的用户名/amdl-run
+          ref: main                              # 推送到amdl-run的main分支
+          token: ${{ secrets.WRAPPER_PUSH_TOKEN }}  # 核心：复用原有令牌变量名，无需重新配置
+          path: amdl-run                         # 独立工作目录，隔离所有操作
+          fetch-depth: 1                         # 浅克隆，Action自动兼容
+
+      # 步骤7：复制编译产物 amdl 到 amdl-run 仓库根目录
+      - name: Copy amdl to amdl-run Root Directory
+        run: |
+          # 递归复制amdl到仓库根目录，-p保留可执行权限（关键）
+          cp -rp ./amdl amdl-run/
+          # 进入仓库目录，验证产物是否成功复制
+          cd amdl-run
+          ls -lahp ./ # 确认amdl存在且带x可执行权限
+
+      # 步骤8：提交并推送到 amdl-run 远程仓库（容错处理，无变更不中断）
+      - name: Commit & Push to amdl-run
+        run: |
+          cd amdl-run
+          # 暂存所有变更（仅amdl文件）
+          git add .
+          # 提交变更，无新修改则跳过（避免工作流报错）
+          git commit -m "Update amdl: Linux-amd64 (Go1.23 | Ubuntu24.04) - ${GITHUB_SHA:0:7}" || echo "No changes to commit"
+          # 推送到远程main分支（Action自动关联origin，无需手动拼接地址）
+          git push origin main
