@@ -1,4 +1,4 @@
-name: Comment Scan Build amdl & Push All Files to amdl-run
+name: Build amdl & Push All Files to amdl-run
 on:
   workflow_dispatch: # 仅手动触发，灵活控制执行时机
   # 可选：取消注释后，源码仓库main分支推送时自动触发
@@ -30,13 +30,12 @@ jobs:
         run: |
           go env -w GOPROXY=https://goproxy.cn,direct
 
-      # 【新增步骤4】注释main.go中的所有fmt.Scanln()，使用//单行注释
+      # 【修复后步骤4】注释main.go中的所有fmt.Scanln()，使用//单行注释（ubuntu兼容）
       - name: Comment out all fmt.Scanln() in main.go with //
         run: |
           cd apple-music-downloader
-          # sed原地替换：匹配所有含fmt.Scanln()的行，行首添加//（单行注释）
-          # -i：原地修改文件；s/^/\/\//：将行首替换为//，兼容所有Linux环境
-          sed -i 's/^/\/\//' main.go -e '/fmt.Scanln()/p'
+          # 正确的sed原地替换命令：仅注释含fmt.Scanln()的行，ubuntu-24.04原生兼容
+          sed -i '/fmt.Scanln()/s/^/\/\//' main.go
 
       # 步骤5：核心编译：main.go → amdl（静态编译，生成在源码根目录）
       - name: Build main.go to amdl (Static Compile)
