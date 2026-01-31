@@ -1964,7 +1964,7 @@ func main() {
 			break
 		}
 		fmt.Println("Error detected, press Enter to try again...")
-		fmt.Scanln()
+//		fmt.Scanln()
 		fmt.Println("Start trying again...")
 		counter = structs.Counter{}
 	}
