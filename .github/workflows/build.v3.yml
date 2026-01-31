@@ -30,14 +30,16 @@ jobs:
         run: |
           go env -w GOPROXY=https://goproxy.cn,direct
 
-      # 【修复后步骤4】注释main.go中的所有fmt.Scanln()，使用//单行注释（ubuntu兼容）
-      - name: Comment out all fmt.Scanln() in main.go with //
+      # 【替换为awk命令】注释main.go中所有fmt.Scanln()，兼容所有Linux环境，无版本问题
+      - name: Comment out all fmt.Scanln() in main.go with // (awk stable version)
         run: |
           cd apple-music-downloader
-          # 正确的sed原地替换命令：仅注释含fmt.Scanln()的行，ubuntu-24.04原生兼容
-          sed -i '/fmt.Scanln()/s/^/\/\//' main.go
+          # awk核心命令：匹配含fmt.Scanln()的行加//，其他行原样输出，覆盖原文件
+          awk '/fmt.Scanln()/ {print "//" $0; next} 1' main.go > main.tmp && mv main.tmp main.go
+          # 可选验证：打印注释后的结果，便于工作流日志排查（可删除）
+          grep -n "fmt.Scanln()" main.go
 
-      # 步骤5：核心编译：main.go → amdl（静态编译，生成在源码根目录）
+      # 步骤4：核心编译：main.go → amdl（静态编译，生成在源码根目录）
       - name: Build main.go to amdl (Static Compile)
         run: |
           cd apple-music-downloader
@@ -48,13 +50,13 @@ jobs:
           ls -lahp amdl # 验证编译产物信息
           ./amdl --help || echo "amdl 程序可正常执行" # 验证程序运行状态
 
-      # 步骤6：配置Git全局身份（Actions推送仓库必备，标准写法）
+      # 步骤5：配置Git全局身份（Actions推送仓库必备，标准写法）
       - name: Configure Git Global Identity
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-      # 步骤7：拉取你的 kimycai/amdl-run 仓库（复用原有令牌 WRAPPER_PUSH_TOKEN）
+      # 步骤6：拉取你的 kimycai/amdl-run 仓库（复用原有令牌 WRAPPER_PUSH_TOKEN）
       - name: Checkout amdl-run Repository
         uses: actions/checkout@v4
         with:
@@ -64,7 +66,7 @@ jobs:
           path: amdl-run # 目标仓库独立目录，与源码隔离
           fetch-depth: 1 # 浅克隆，Action自动兼容
 
-      # 步骤8：核心修改：复制**源码目录所有文件**到 amdl-run 根目录（保留权限+结构）
+      # 步骤7：核心修改：复制**源码目录所有文件**到 amdl-run 根目录（保留权限+结构）
       - name: Copy All Project Files to amdl-run Root
         run: |
           # 递归复制源码目录下所有文件/文件夹到amdl-run根目录
@@ -74,7 +76,7 @@ jobs:
           cd amdl-run
           ls -lahp ./ # 查看根目录文件，确认结构与原项目一致
 
-      # 步骤9：提交并推送到 kimycai/amdl-run 远程仓库（容错处理，无变更不中断）
+      # 步骤8：提交并推送到 kimycai/amdl-run 远程仓库（容错处理，无变更不中断）
       - name: Commit & Push All Files to amdl-run
         run: |
           cd amdl-run
