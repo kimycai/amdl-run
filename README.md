@@ -1,5 +1,7 @@
 English / [简体中文](./README-CN.md)
 
+由本仓库的action脚本v3版编译推送
+
 ### ！！Must be installed first [MP4Box](https://gpac.io/downloads/gpac-nightly-builds/)，And confirm [MP4Box](https://gpac.io/downloads/gpac-nightly-builds/) Correctly added to environment variables
 
 ### Add features
