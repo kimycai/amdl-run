@@ -38,13 +38,13 @@ jobs:
           # 验证修改结果
           Select-String -Path main.go -Pattern "fmt.Scanln" -AllMatches
 
-      # 步骤4：核心编译：main.go → amdl.exe（Windows可执行文件）
+      # 步骤4：核心编译：main.go → amdl.exe（Windows可执行文件，指定名称）
       - name: Build main.go to amdl.exe (Windows)
         run: |
           cd apple-music-downloader
           go mod tidy # 补全项目依赖，防止编译失败
-          # Windows环境下编译amdl.exe
-          go build -o amdl.exe -ldflags="-s -w" -trimpath ./main.go
+          # Windows环境下编译amdl.exe（指定输出名称）
+          go build -o amdl.exe -ldflags="-s -w" -trimpath .
           Get-ChildItem amdl.exe # 验证编译产物信息
           ./amdl.exe --help # 验证程序运行状态
 
