@@ -37,9 +37,8 @@ jobs:
       - name: Build main.go to amdl.exe (Windows)
         run: |
           cd apple-music-downloader
-          go mod tidy # 补全项目依赖，防止编译失败
-          # Windows环境下编译amdl.exe（指定输出名称）
-          go build -o amdl.exe -ldflags="-s -w" -trimpath .
+          # 使用官方推荐的简单编译命令，输出为amdl.exe
+          go build -o amdl.exe -v ./main.go
           Get-ChildItem amdl.exe # 验证编译产物信息
           ./amdl.exe --help || echo "amdl.exe compiled successfully" # 验证程序，即使返回非零退出码也不停止
 
