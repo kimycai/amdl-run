@@ -33,7 +33,7 @@ jobs:
           # 验证修改结果
           Select-String -Path main.go -Pattern "fmt.Scanln" -AllMatches
 
-      # 步骤4：核心编译：main.go → amdl.exe（Windows可执行文件，指定名称）
+      # 步骤3：核心编译：main.go → amdl.exe（Windows可执行文件，指定名称）
       - name: Build main.go to amdl.exe (Windows)
         run: |
           cd apple-music-downloader
@@ -43,13 +43,13 @@ jobs:
           Get-ChildItem amdl.exe # 验证编译产物信息
           ./amdl.exe --help || echo "amdl.exe compiled successfully" # 验证程序，即使返回非零退出码也不停止
 
-      # 步骤5：配置Git全局身份（Actions推送仓库必备，标准写法）
+      # 步骤4：配置Git全局身份（Actions推送仓库必备，标准写法）
       - name: Configure Git Global Identity
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-      # 步骤6：拉取你的 kimycai/amdl-run 仓库（复用原有令牌 WRAPPER_PUSH_TOKEN）
+      # 步骤5：拉取你的 kimycai/amdl-run 仓库（复用原有令牌 WRAPPER_PUSH_TOKEN）
       - name: Checkout amdl-run Repository
         uses: actions/checkout@v4
         with:
@@ -59,7 +59,7 @@ jobs:
           path: amdl-run # 目标仓库独立目录，与源码隔离
           fetch-depth: 1 # 浅克隆，Action自动兼容
 
-      # 步骤7：复制编译产物和项目文件到目标目录
+      # 步骤6：复制编译产物和项目文件到目标目录
       - name: Copy Compiled Files and Project Files to amdl-run
         run: |
           # 复制amdl.exe到目标目录
@@ -73,21 +73,21 @@ jobs:
             Copy-Item $_.FullName -Destination "amdl-run/" -Recurse
           }
 
-      # 步骤8：创建ZIP压缩包作为构建产物
+      # 步骤7：创建ZIP压缩包作为构建产物
       - name: Create ZIP Archive
         run: |
           cd amdl-run
           # 创建包含所有文件的ZIP压缩包
           Compress-Archive -Path * -DestinationPath "../amdl-windows-build.zip" -Force
           
-      # 步骤9：上传ZIP作为构建产物
+      # 步骤8：上传ZIP作为构建产物
       - name: Upload ZIP Artifact
         uses: actions/upload-artifact@v4
         with:
           name: amdl-windows-build
           path: amdl-windows-build.zip
 
-      # 步骤10：提交并推送到 kimycai/amdl-run 远程仓库（容错处理，无变更不中断）
+      # 步骤9：提交并推送到 kimycai/amdl-run 远程仓库（容错处理，无变更不中断）
       - name: Commit & Push All Files to amdl-run
         run: |
           cd amdl-run
