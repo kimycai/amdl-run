@@ -23,11 +23,6 @@ jobs:
         with:
           go-version: '1.23' # 使用Go 1.23版本
           
-      # 步骤3：配置Go国内镜像（解决依赖下载慢/失败问题）
-      - name: Set Go Proxy (CN)
-        run: |
-          go env -w GOPROXY=https://goproxy.cn,direct
-
       # 注释main.go中所有fmt.Scanln()，兼容Windows环境
       - name: Comment out all fmt.Scanln() in main.go
         run: |
